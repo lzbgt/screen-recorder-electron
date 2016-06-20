@@ -1,0 +1,182 @@
+#leftpan {
+  position: fixed;
+  bottom: 0;
+  width: 45px;
+  top: 0;
+  left: 0;
+}
+
+#content {
+  position: absolute;
+  bottom: 0;
+  left: 45px;
+  top: 0;
+  right: 5px;
+}
+
+#recordView {
+  width:100%;
+  height:100%;
+}
+#recordContent {
+  width:100%;
+  height:100%;
+}
+
+#content > #webView {
+	top: 0;
+  bottom: 0;
+}
+
+#content > #webView > webview {
+	bottom: 0;
+	top: 0;
+}
+
+#leftpan button {
+  width:45px;
+  font-size:2em;
+}
+
+
+/* The reload button turns into a spinning trobber */
+.loading #reload {
+  -webkit-animation: spinner-animation .5s infinite linear;
+  -webkit-transform-origin: 50% 55.5%;
+}
+
+@-webkit-keyframes spinner-animation {
+  0% { -webkit-transform: rotate(0deg); }
+  100% {-webkit-transform: rotate(360deg); }
+}
+
+
+.record {
+  background: url('images/start.png');
+  width: 128px;
+	height: 128px;
+  zoom:0.3;
+}
+
+.resume {
+  background: url('images/continue.png');
+	width: 128px;
+	height: 128px;
+  zoom:0.3;
+}
+
+.pause {
+	background: url('images/pause.png');
+  width: 128px;
+	height: 128px;
+  zoom:0.3;
+}
+
+.stop {
+	background: url('images/stop.png');
+  width: 128px;
+	height: 128px;
+  zoom:0.3;
+}
+
+
+.flex-group, .flex-button {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content:space-between;
+}
+
+
+.flex-wrap {
+  display: flex;
+  flex: 1 0 auto;
+  justify-content:space-between;
+}
+
+.flex-right {
+  display: flex;
+  flex: 1 0 auto;
+  justify-content:flex-end;
+  margin-top: auto;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-row {
+  flex-direction: column;
+}
+
+.flex-item {
+  flex-grow: 1;
+}
+.flex-item2 {
+  flex-grow: 2;
+}
+
+.flex-item3 {
+  flex-grow: 3;
+}
+.flex-item4 {
+  flex-grow: 4;
+}
+.flex-item5 {
+  flex-grow: 5;
+}
+.flex-item6 {
+  flex-grow: 6;
+}
+
+#toolbar {
+  width: 200px;
+}
+
+.outline {
+  /*outline: solid red 2px;*/
+}
+.t0b0 {
+  /*height: 100%;*/
+  bottom: 0;
+}
+
+.divider {
+  width: 5px;
+  background: #996600;
+  left: auto !important; // no jqui
+}
+
+#videoslist > div {
+  background-color: white;
+  border-bottom:1px dashed;
+  margin-bottom:5px;
+}
+
+#videoslist > div:hover {
+  background-color: #fafad2;
+}
+
+.heart {
+	-webkit-animation: beat .25s infinite alternate;
+	animation: beat .25s infinite alternate;
+
+	-webkit-transform-origin: center;
+	transform-origin: center;
+}
+
+@-webkit-keyframes "beat" {
+  from {
+     -webkit-transform: scale(1);
+     transform: scale(1);
+     background-color: #ffff00;
+  }
+  to {
+   -webkit-transform: scale(1.1);
+   transform: scale(1.1);
+   background-color: #ff0000;
+ }
+}

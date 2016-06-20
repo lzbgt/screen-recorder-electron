@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>亿教亿学PC客户端(录课专用)</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="browser.css">
+    <link rel="stylesheet" href="./css/photon.css">
+    <script>window.$ = window.jQuery = require("./js/jquery/dist/jquery.min.js");</script>
+    <link rel="stylesheet" href="./js/jquery-ui/jquery-ui.min.css">
+    <script src="./js/jquery-ui/jquery-ui.min.js"></script>
+  </head>
+  <body style="overflow:hidden;">
+    <nav id="leftpan" class="flex-button flex-column">
+      <button class="icon icon-home flex-item active" id="home">
+      </button>
+      <button class="icon icon-cloud flex-item" id="web">
+      </button>
+      <button class="icon icon-download flex-item" id="extra">
+      </button>
+    </nav>
+
+    <div id="content" class="outline">
+      <div id="recordView">
+        <div id='menu' class="flex-button outline">
+          <div id="toolbar" class="flex-button">
+            <button class="icon icon-record flex-item" action="record"></button>
+            <!-- <button class="icon icon-play flex-item" action="resume"></button> -->
+            <button class="icon icon-pause flex-item" action="pause"></button>
+            <button class="icon icon-stop flex-item" action="stop"></button>
+            <button class="icon icon-help flex-item" action="help"></button>
+          </div>
+          <div id="audios" class="flex-right outline"></div>
+        </div>
+        <div id="recordContent" class="outline t0b0 flex-group">
+          <div id="editor-1" class="outline editor flex-item t0b0">
+          <div class="flex" style="min-width:200px;">
+            <button class="flex-item icon icon-list active">视频列表</button>
+            <button class="flex-item icon icon-folder" style="color:goldenrod;" id="explore_files">打开目录</button>
+          </div>
+          <div id="videoslist" class="flex-group flex-column">
+            <!-- <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div> -->
+          </div>
+          </div>
+          <div class="divider" id="divider-1"></div>
+          <div id="editor-2" class="outline  editor flex-item6 t0b0">
+          <video style="width:100%;" controls>
+            <source src="" type="video/mp4">
+            Your browser does not support HTML5 video.
+          </video>
+          </div>
+        </div>
+      </div>
+      <div id="webView" style="display:none;">
+        <webview  src="http://zgyjyx.com/teacher/login/login.html" ></webview>
+      </div>
+  </div>
+  <script src="drag.js"></script>
+  <script src="browser.js"></script>
+  </body>
+</html>

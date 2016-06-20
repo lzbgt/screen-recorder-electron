@@ -1,0 +1,11 @@
+{
+  "name": "亿教亿学PC客户端(录课专用)",
+  "version": "0.0.1",
+  "description": "亿教亿学PC客户端(录课专用)",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Bruce.Lu <lzbgt@126.com>",
+  "license": "MIT"
+}
