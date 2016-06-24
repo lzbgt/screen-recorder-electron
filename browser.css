@@ -82,7 +82,7 @@
 
 .flex-group, .flex-button {
   display: flex;
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   justify-content:space-between;
 }
 
@@ -97,6 +97,13 @@
   display: flex;
   flex: 1 0 auto;
   justify-content:flex-end;
+  margin-top: auto;
+}
+
+.flex-left {
+  display: flex;
+  flex: 1 0 auto;
+  justify-content:flex-start;
   margin-top: auto;
 }
 
@@ -133,7 +140,7 @@
 }
 
 #toolbar {
-  width: 200px;
+  /*width: 200px;*/
 }
 
 .outline {

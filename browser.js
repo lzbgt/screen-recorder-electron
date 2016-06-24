@@ -197,7 +197,8 @@ function closeBoxes() {
 var ffmpeg = null;
 const ffmpegPath = 'resources\\app\\bin\\ffmpeg.exe';
 const cmdListAudioDev = '-list_devices true -f dshow -i dummy'.split(' ');
-const cmdRecord = `-y -rtbufsize 100M -f gdigrab -framerate 15 -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -r 15 -preset medium -tune zerolatency -crf 35 -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
+const cmdRecord = `-y -rtbufsize 100M -f gdigrab -framerate 35 -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -r 35 -preset ultrafast -tune zerolatency -qp 0 -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
+// const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264  -preset medium -tune zerolatency  -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 const cmdCombineVideos = `-y -f concat -safe 0 -i list.txt -c copy <filename>`;
 var audioDevList = null;
 var pausedVideos = new Set();
@@ -232,7 +233,7 @@ function doInit(){
       //   resume();
       //   break;
       case 'help':
-        alert('该功能暂时禁用');
+        alert('F10: 录制/结束\r\nF11: 暂停/继续');
       default:
         console.log('unknown action:', btn);
     }
@@ -249,6 +250,8 @@ function doInit(){
         case 'F11':
           recordStatus == 'recording' ? pause(): recordStatus == 'paused' ? record() : () => {console.log('unrelevant state: ', recordStatus)};
           break;
+        case 'exit':
+          stop();
         default:
           console.log('unhandled event:', msg.data);
       }
@@ -259,12 +262,12 @@ function doInit(){
     console.log(arg); // prints "pong"
   });
   ipcRenderer.send('asynchronous-message', 'ping');
-  
+
   // dom events
   $('#explore_files').on('click', function(evt){
-    exec('start videos');
+    exec('start ' + outputDir);
   });
-  eventVideoClick();
+  eventClick();
   $('#leftpan > button').on('click', function(evt) {
     var target = $(evt.target);
     target.siblings().removeClass('active');
@@ -279,7 +282,6 @@ function handleNav(id) {
     $('#recordView').css("display","block");
   }else if (id == 'web') {
     $('#recordView').css("display","none");
-    // alignment
     $('#content > #webView').get(0).style.height='100%';
     $('#content > #webView').get(0).style.width='100%';
     $('#content > #webView > webview').get(0).style.height='100%';
@@ -288,18 +290,46 @@ function handleNav(id) {
   }
 }
 
-function eventVideoClick() {
-  //dom event
-  //$('#editor-2 > video').get(0).addEventListener('error', function(event) {
-  //  alert(event);
-  //}, true);
-  
-  $('#videoslist > div > div').on('click', function(evt){
-    var src = outputDirUnix+evt.target.innerHTML;
-    $('#editor-2 > video > source').attr('src', src);
-      $('#editor-2 > video').get(0).load(); 
+function eventClick() {
+  function evtVideoClick() {
+    $('#videoslist > div > div > div').on('click', function(evt){
+      var src = outputDirUnix+evt.target.innerHTML;
+      $('#editor-2 > video > source').attr('src', src);
+        $('#editor-2 > video').get(0).load();
+    });
+  }
+
+  evtVideoClick();
+
+  $('button.icon-pencil').on('click', function(){
+    var filename = $('button.icon-pencil').siblings().next().prev().children().html();
+    filename = filename.slice(0,filename.lastIndexOf('.'))
+    $('button.icon-pencil').siblings().next().prev().html('<input value = '+ filename+ '>')
+    $('button.icon-pencil').attr('disabled', 'disabled');
+    var inputCtrl = $('#videoslist > div > div > input');
+    inputCtrl.focus().val(inputCtrl.val());
+    // enter key pressed
+    $('#videoslist > div > div > input').keyup(function(e){
+      if(e.keyCode == 13){
+          $(this).blur();
+      }
+    });
+    //lost focus
+    $('#videoslist > div > div > input').focusout(function(evt){
+      // rename or restore filename
+      var newname = $(this).val();
+      if(newname != filename) {
+        fs.rename(outputDir + filename +'.mp4', outputDir + $(this).val() +'.mp4', function(err, data){
+          $('button.icon-pencil').removeAttr('disabled');
+        });
+        filename = newname;
+      }
+      $('button.icon-pencil').siblings().next().prev().html('<div>'+filename+'.mp4</div>');
+      $('button.icon-pencil').removeAttr('disabled');
+      evtVideoClick();
+    });
   });
-  
+
 }
 
 function listAudioDev(){
@@ -370,12 +400,21 @@ function record(){
     console.log(`child process exited with code ${code}`);
   });
   recordStatus = 'recording';
-  $('button[action]').removeClass('heart');
-  $('button[action="record"]').addClass('heart');
+  ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'recording'}));
+/*   $('button[action]').removeClass('heart');
+  $('button[action="record"]').addClass('heart'); */
 }
 
 function stop(pause){
-  debugger;
+  if(pause && recordStatus == 'paused'){
+    return;
+  }
+
+  if('recording, paused, stopped'.indexOf(recordStatus) == -1) {
+    return;
+  }
+  ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'stopped'}));
+
   console.log('quiting');
   if(ffmpeg) {
     ffmpeg.stdin.write('q');
@@ -390,16 +429,12 @@ function stop(pause){
     if(pause) {
       recordStatus = 'paused';
       pausedVideos.add(currentFileName);
-      $('button[action]').removeClass('heart');
-      $('button[action="pause"]').addClass('heart');
+    /*   $('button[action]').removeClass('heart');
+      $('button[action="pause"]').addClass('heart'); */
       return;
     }else{
       recordStatus = 'stopped';
     }
-  }
-
-  if('recording, paused, stopped'.indexOf(recordStatus) == -1) {
-    return;
   }
 
   // having paused files
@@ -452,9 +487,9 @@ function stop(pause){
   // <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div>
   var lastFile = recordedFiles[recordedFiles.length-1];
   lastFile = lastFile.slice(lastFile.lastIndexOf('\\') + 1)
-  var newRecHTML = '<div class="flex-item flex-group"><div>'+lastFile+'</div> <button class="icon icon-pencil"></button></div>'
+  var newRecHTML = '<div class="flex-item flex-group"><div><div>'+lastFile+'</div></div> <button class="icon icon-pencil"></button></div>'
   $('#videoslist').prepend(newRecHTML);
-  eventVideoClick();
+  eventClick();
 
   console.log('recorded files: ', recordedFiles.reverse().join(','));
 
@@ -462,7 +497,7 @@ function stop(pause){
   pausedVideos = new Set();
   currentFileName = '';
   recordStatus = 'init';
-  $('button[action]').removeClass('heart');
+  /* $('button[action]').removeClass('heart'); */
 }
 
 function pause() {
