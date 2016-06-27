@@ -197,7 +197,7 @@ function closeBoxes() {
 var ffmpeg = null;
 const ffmpegPath = 'resources\\app\\bin\\ffmpeg.exe';
 const cmdListAudioDev = '-list_devices true -f dshow -i dummy'.split(' ');
-const cmdRecord = `-y -rtbufsize 100M -f gdigrab -framerate 35 -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -r 35 -preset ultrafast -tune zerolatency -qp 0 -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
+const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -framerate 25 -r 25 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -b:v 10M -preset ultrafast -tune zerolatency -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 // const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264  -preset medium -tune zerolatency  -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 const cmdCombineVideos = `-y -f concat -safe 0 -i list.txt -c copy <filename>`;
 var audioDevList = null;
@@ -298,35 +298,38 @@ function eventClick() {
         $('#editor-2 > video').get(0).load();
     });
   }
-
   evtVideoClick();
 
   $('button.icon-pencil').on('click', function(){
-    var filename = $('button.icon-pencil').siblings().next().prev().children().html();
+    var fileContainer = $(this).prev();
+    var filename = fileContainer.children().html();
     filename = filename.slice(0,filename.lastIndexOf('.'))
-    $('button.icon-pencil').siblings().next().prev().html('<input value = '+ filename+ '>')
-    $('button.icon-pencil').attr('disabled', 'disabled');
-    var inputCtrl = $('#videoslist > div > div > input');
+    fileContainer.html('<input value = '+ filename+ '>')
+    $(this).attr('disabled', 'disabled');
+    var inputCtrl = fileContainer.children();
     inputCtrl.focus().val(inputCtrl.val());
     // enter key pressed
-    $('#videoslist > div > div > input').keyup(function(e){
+    inputCtrl.keyup(function(e){
       if(e.keyCode == 13){
-          $(this).blur();
+          // rename or restore filename
+          var newname = $(this).val();
+          debugger;
+          var pencilCtrl =  $(this).parent().siblings();
+          if(newname != filename) {
+            fs.rename(outputDir + filename +'.mp4', outputDir + $(this).val() +'.mp4', function(err, data){
+            });
+            filename = newname;
+          }
+          $(this).parent().html('<div>'+filename+'.mp4</div>');
+          pencilCtrl.removeAttr('disabled');
+          evtVideoClick();
+          //$(this).blur();
       }
     });
+
     //lost focus
     $('#videoslist > div > div > input').focusout(function(evt){
-      // rename or restore filename
-      var newname = $(this).val();
-      if(newname != filename) {
-        fs.rename(outputDir + filename +'.mp4', outputDir + $(this).val() +'.mp4', function(err, data){
-          $('button.icon-pencil').removeAttr('disabled');
-        });
-        filename = newname;
-      }
-      $('button.icon-pencil').siblings().next().prev().html('<div>'+filename+'.mp4</div>');
-      $('button.icon-pencil').removeAttr('disabled');
-      evtVideoClick();
+      //
     });
   });
 
@@ -487,7 +490,7 @@ function stop(pause){
   // <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div>
   var lastFile = recordedFiles[recordedFiles.length-1];
   lastFile = lastFile.slice(lastFile.lastIndexOf('\\') + 1)
-  var newRecHTML = '<div class="flex-item flex-group"><div><div>'+lastFile+'</div></div> <button class="icon icon-pencil"></button></div>'
+  var newRecHTML = '<div class="flex-item flex-group"><div><div>'+lastFile+'</div></div> <!-- button class="icon icon-pencil"></button --></div>'
   $('#videoslist').prepend(newRecHTML);
   eventClick();
 

@@ -1,7 +1,10 @@
-const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray} = require('electron');
+const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray, autoUpdater} = require('electron');
 
 const ps = require('ps-node');
 const exec = require('child_process').exec
+
+var rec_tool_url = 'update.zgyjyx.com/tools/scree-rec'
+
 
 let mainWindow;
 
@@ -61,6 +64,10 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({width: 1024, height: 500, icon:__dirname+'/images/yj.ico' });
   mainWindow.setMenu(null);
   mainWindow.loadURL('file://' + __dirname + '/browser.html');
+  // check for update
+  autoUpdater.setFeedURL(rec_tool_url);
+  autoUpdater.checkForUpdates();
+
   //mainWindow.openDevTools();
   var lastF10 = 0;
   var ret = globalShortcut.register('F10', () => {
@@ -84,11 +91,11 @@ app.on('ready', function() {
     }else{
       stillTray();
       mainWindow.send('hotkey', {data:'F10'});
+      mainWindow.focus();
       setTimeout(function(){
         win.close();
       }, 1.5 * 1000);
     }
-
   });
 
   var isPaused = false;
@@ -102,7 +109,7 @@ app.on('ready', function() {
     }
     lastF11 = new Date().getTime()/1000;
     // console.log('F11 is pressed');
-      mainWindow.send('hotkey', {data:'F11'});
+    mainWindow.send('hotkey', {data:'F11'});
     if(isRecording && !isPaused) {
       isPaused = true;
       stillTray();
