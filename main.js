@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray, autoUpdater} = require('electron');
+const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray} = require('electron');
 
 const ps = require('ps-node');
 const exec = require('child_process').exec
@@ -65,15 +65,12 @@ app.on('ready', function() {
   mainWindow.setMenu(null);
   mainWindow.loadURL('file://' + __dirname + '/browser.html');
   // check for update
-  autoUpdater.setFeedURL(rec_tool_url);
-  autoUpdater.checkForUpdates();
 
   //mainWindow.openDevTools();
   var lastF10 = 0;
   var ret = globalShortcut.register('F10', () => {
     var now = new Date().getTime()/1000;
     var delta = now - lastF10;
-    lastF10 = now;
     if(delta < 4) {
       return;
     }
@@ -87,7 +84,7 @@ app.on('ready', function() {
         win.close();
         mainWindow.send('hotkey', {data:'F10'});
         blinkTray();
-      }, 3 * 1000);
+      }, 2 * 1000);
     }else{
       stillTray();
       mainWindow.send('hotkey', {data:'F10'});
@@ -103,7 +100,6 @@ app.on('ready', function() {
   ret = ret && globalShortcut.register('F11', () => {
     var now = new Date().getTime()/1000;
     var delta = now - lastF11;
-    lastF11 = now;
     if(delta < 4) {
       return;
     }
