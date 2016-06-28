@@ -88,9 +88,9 @@ app.on('ready', function() {
     }else{
       stillTray();
       mainWindow.send('hotkey', {data:'F10'});
-      mainWindow.focus();
       setTimeout(function(){
         win.close();
+        mainWindow.focus();
       }, 1.5 * 1000);
     }
   });
@@ -117,7 +117,7 @@ app.on('ready', function() {
     }else if(isRecording && isPaused){
       isPaused = false;
       var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
-      pauseWin.loadURL('file://' + __dirname + '/resume.html');
+      pauseWin.loadURL('file://' + __dirname + '/pause.html');
       setTimeout(function(){
         pauseWin.close();
       }, 0.5 * 1000);
