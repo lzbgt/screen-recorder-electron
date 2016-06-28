@@ -108,9 +108,19 @@ app.on('ready', function() {
     mainWindow.send('hotkey', {data:'F11'});
     if(isRecording && !isPaused) {
       isPaused = true;
+      var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+      pauseWin.loadURL('file://' + __dirname + '/pause.html');
+      setTimeout(function(){
+        pauseWin.close();
+      }, 0.5 * 1000);
       stillTray();
     }else if(isRecording && isPaused){
       isPaused = false;
+      var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+      pauseWin.loadURL('file://' + __dirname + '/resume.html');
+      setTimeout(function(){
+        pauseWin.close();
+      }, 0.5 * 1000);
       blinkTray();
     }
   });
