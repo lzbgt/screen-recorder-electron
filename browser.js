@@ -1,4 +1,5 @@
-// window.onresize = doLayout;
+const {dialog} = require('electron').remote;
+
 var isLoading = false;
 var default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
 var fs = require('fs'), assert = require('assert');
@@ -211,6 +212,14 @@ const appTitle = document.title;
 
 //
 function doInit(){
+  document.ondragover = document.ondrop = (ev) => {
+    ev.preventDefault();
+  }
+
+  document.body.ondrop = (ev) => {
+    alert(ev.dataTransfer.files[0].path);
+    ev.preventDefault();
+  }
   try {
     fs.accessSync(outputDir, fs.F_OK);
   } catch (e) {
@@ -232,8 +241,22 @@ function doInit(){
       // case 'resume':
       //   resume();
       //   break;
+
+      // open file dialog
+      case 'playvideo':
+      //   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'button', data:'playvideo'}));
+      dialog.showOpenDialog(
+        {filters: [
+          { name: 'x264 Video', extensions: ['mp4'] }
+        ]},function(file){
+          console.log(file);
+          $('#editor-2 > video > source').attr('src', 'file://'+file[0]);
+          $('#editor-2 > video').get(0).load();
+        });
+        break;
+
       case 'help':
-        alert('F10: 录制/结束\r\nF11: 暂停/继续');
+        alert('F10: 录制/结束\r\nF11: 暂停/继续\r\n播放视频文件: 选择本地视频文件播放');
       default:
         console.log('unknown action:', btn);
     }
@@ -295,7 +318,7 @@ function eventClick() {
     $('#videoslist > div > div > div').on('click', function(evt){
       var src = outputDirUnix+evt.target.innerHTML;
       $('#editor-2 > video > source').attr('src', src);
-        $('#editor-2 > video').get(0).load();
+      $('#editor-2 > video').get(0).load();
     });
   }
   evtVideoClick();

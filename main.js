@@ -61,37 +61,48 @@ app.on('ready', function() {
     var cmd = `cmd /c wscript resources\\app\\bin\\pen.vbs ${r} ${g} ${b}`;
     exec(cmd);
   }
-  mainWindow = new BrowserWindow({width: 1024, height: 500, icon:__dirname+'/images/yj.ico' });
+  mainWindow = new BrowserWindow({minWidth: 1024, minHeight: 550, width: 1024, height: 550, icon:__dirname+'/images/yj.ico' });
   mainWindow.setMenu(null);
   mainWindow.loadURL('file://' + __dirname + '/browser.html');
   // check for update
 
   //mainWindow.openDevTools();
   var lastF10 = 0;
+  const PREVENT_INTERVAL = 2; // 2 seconds
   var ret = globalShortcut.register('F10', () => {
     var now = new Date().getTime()/1000;
     var delta = now - lastF10;
-    if(delta < 4) {
+    if(delta < PREVENT_INTERVAL) {
       return;
     }
     lastF10 = new Date().getTime()/1000;
 
     isRecording = !isRecording;
-    let win = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
-    win.loadURL('file://' + __dirname + (isRecording? '/start.html':'/stop.html'));
     if(isRecording) {
+      var win = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+      win.loadURL('file://' + __dirname + '/start.html');
+      // close the message window after 2s
       setTimeout(function(){
         win.close();
-        mainWindow.send('hotkey', {data:'F10'});
-        blinkTray();
+        // delay 0.5s for the message window to close
+        setTimeout(function(){
+          mainWindow.send('hotkey', {data:'F10'});
+          blinkTray();
+        },0.5 * 1000);
       }, 2 * 1000);
     }else{
       stillTray();
       mainWindow.send('hotkey', {data:'F10'});
+      // show the message 1s later
       setTimeout(function(){
-        win.close();
-        mainWindow.focus();
-      }, 1.5 * 1000);
+        var win = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+        win.loadURL('file://' + __dirname + '/stop.html');
+        // 1s later we close the messagebox
+        setTimeout(function(){
+          win.close();
+          mainWindow.focus();
+        }, 1 * 1000);
+      }, 1 * 1000);
     }
   });
 
@@ -100,27 +111,36 @@ app.on('ready', function() {
   ret = ret && globalShortcut.register('F11', () => {
     var now = new Date().getTime()/1000;
     var delta = now - lastF11;
-    if(delta < 4) {
+    if(delta < PREVENT_INTERVAL) {
       return;
     }
     lastF11 = new Date().getTime()/1000;
     // console.log('F11 is pressed');
-    mainWindow.send('hotkey', {data:'F11'});
     if(isRecording && !isPaused) {
       isPaused = true;
-      var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
-      pauseWin.loadURL('file://' + __dirname + '/pause.html');
+      // pause before show message
+      mainWindow.send('hotkey', {data:'F11'});
+      // 2s later we show the pause message
       setTimeout(function(){
-        pauseWin.close();
-      }, 0.5 * 1000);
+        var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+        pauseWin.loadURL('file://' + __dirname + '/pause.html');
+        // 1.5s later to close the message window
+        setTimeout(function(){
+          pauseWin.close();
+        }, 3 * 1000);
+      }, 1 * 1000);
       stillTray();
     }else if(isRecording && isPaused){
       isPaused = false;
-      var pauseWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
-      pauseWin.loadURL('file://' + __dirname + '/pause.html');
+      var resumeWin = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
+      resumeWin.loadURL('file://' + __dirname + '/resume.html');
       setTimeout(function(){
-        pauseWin.close();
-      }, 0.5 * 1000);
+        resumeWin.close();
+        // start recording after the message window closed
+        setTimeout(function(){
+          mainWindow.send('hotkey', {data:'F11'});
+        }, 1 * 1000);
+      }, 1.5 * 1000);
       blinkTray();
     }
   });
@@ -193,6 +213,12 @@ ipcMain.on('asynchronous-message', (event, arg) => {
     }
 
     switch(msg.event) {
+      // case 'button':
+      //   switch(msg.data){
+      //     case 'playvideo':
+      //     dialog.showOpenDialog();
+      //   }
+      //   break;
       case 'state':
         switch(msg.data) {
           case 'recording':
