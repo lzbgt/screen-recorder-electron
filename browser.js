@@ -245,14 +245,18 @@ function doInit(){
       // open file dialog
       case 'playvideo':
       //   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'button', data:'playvideo'}));
-      dialog.showOpenDialog(
-        {filters: [
-          { name: 'x264 Video', extensions: ['mp4'] }
-        ]},function(file){
-          console.log(file);
-          $('#editor-2 > video > source').attr('src', 'file://'+file[0]);
-          $('#editor-2 > video').get(0).load();
-        });
+        dialog.showOpenDialog(
+          {filters: [
+            { name: 'x264 Video', extensions: ['mp4'] }
+          ]},function(file){
+            console.log(file);
+            $('#editor-2 > video > source').attr('src', 'file://'+file[0]);
+            $('#editor-2 > video').get(0).load();
+          });
+        break;
+
+      case 'opendir':
+      exec('start ' + outputDir);
         break;
 
       case 'help':
@@ -286,11 +290,6 @@ function doInit(){
   });
   ipcRenderer.send('asynchronous-message', 'ping');
 
-  // dom events
-  $('#explore_files').on('click', function(evt){
-    exec('start ' + outputDir);
-  });
-  eventClick();
   $('#leftpan > button').on('click', function(evt) {
     var target = $(evt.target);
     target.siblings().removeClass('active');
@@ -311,51 +310,6 @@ function handleNav(id) {
     $('#content > #webView > webview').get(0).style.width='100%';
     $('#webView').css("display", "block");
   }
-}
-
-function eventClick() {
-  function evtVideoClick() {
-    $('#videoslist > div > div > div').on('click', function(evt){
-      var src = outputDirUnix+evt.target.innerHTML;
-      $('#editor-2 > video > source').attr('src', src);
-      $('#editor-2 > video').get(0).load();
-    });
-  }
-  evtVideoClick();
-
-  $('button.icon-pencil').on('click', function(){
-    var fileContainer = $(this).prev();
-    var filename = fileContainer.children().html();
-    filename = filename.slice(0,filename.lastIndexOf('.'))
-    fileContainer.html('<input value = '+ filename+ '>')
-    $(this).attr('disabled', 'disabled');
-    var inputCtrl = fileContainer.children();
-    inputCtrl.focus().val(inputCtrl.val());
-    // enter key pressed
-    inputCtrl.keyup(function(e){
-      if(e.keyCode == 13){
-          // rename or restore filename
-          var newname = $(this).val();
-          debugger;
-          var pencilCtrl =  $(this).parent().siblings();
-          if(newname != filename) {
-            fs.rename(outputDir + filename +'.mp4', outputDir + $(this).val() +'.mp4', function(err, data){
-            });
-            filename = newname;
-          }
-          $(this).parent().html('<div>'+filename+'.mp4</div>');
-          pencilCtrl.removeAttr('disabled');
-          evtVideoClick();
-          //$(this).blur();
-      }
-    });
-
-    //lost focus
-    $('#videoslist > div > div > input').focusout(function(evt){
-      //
-    });
-  });
-
 }
 
 function listAudioDev(){
@@ -510,12 +464,70 @@ function stop(pause){
     recordedFiles.push(currentFileName);
   }
 
+function loadVideo(filename){
+  $('#editor-2 > video > source').attr('src', outputDirUnix + filename);
+  $('#editor-2 > video').get(0).load();
+}
   // <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div>
   var lastFile = recordedFiles[recordedFiles.length-1];
   lastFile = lastFile.slice(lastFile.lastIndexOf('\\') + 1)
-  var newRecHTML = '<div class="flex-item flex-group"><div><div>'+lastFile+'</div></div> <!-- button class="icon icon-pencil"></button --></div>'
-  $('#videoslist').prepend(newRecHTML);
-  eventClick();
+  var newRecHTML = '<div class="flex-left"><div id="vfilename"><div>'+lastFile+'</div></div> <button style="margin-left:30px;" class="icon icon-pencil"></button></div>'
+  $('#lastvideo').html(newRecHTML);
+  setTimeout(function(){
+    // load video
+    loadVideo(lastFile);
+
+    // register events
+    $('button.icon-pencil').on('click', function(){
+      $("#vfilename>button").attr('disabled', 'disabled');
+      var filename = $('#vfilename > div').html();
+      filename = filename.slice(0, filename.lastIndexOf('.'));
+      $('#vfilename').html('<input value="' + filename+ '" />');
+      // register enter key event
+      function handleFileNameChange(event){
+        $("#vfilename>button").removeAttr('disabled');
+        if(event.keyCode == 13 || event.type == 'focusout'){
+          // rename file and bur
+          var file = $(event.target).val();
+          var existed = false;
+          try {
+            fs.accessSync(outputDir+ file + '.mp4', fs.F_OK);
+            // exist
+            existed = true;
+          } catch (e) {
+          }
+
+          if(existed) {
+            alert('同名文件已经存在! 请换个名字');
+            return;
+          }
+
+          if(file.length > 0) {
+            try {
+              fs.accessSync(outputDir+ filename + '.mp4', fs.F_OK);
+            } catch (e) {
+              alert('文件不存在: ' + filename + '.mp4');
+              return;
+            }
+            fs.rename(outputDir+ filename + '.mp4', outputDir+ file + '.mp4', function(err, data){
+              if(err) {
+                // alert('重命名文件失败, 请检查目录和文件的权限及是否存在.');
+                console.error('重命名文件失败: ' + JSON.stringify(err));
+              }else{
+                $('#vfilename').html('<div>' + file+ '.mp4 </div>');
+                loadVideo(file+ '.mp4');
+              }
+            });
+          }else{
+            $('#vfilename').html('<div>' + filename+ '.mp4 </div>');
+          }
+        }
+      }
+
+      $("#vfilename>input").keyup(handleFileNameChange);
+      $("#vfilename>input").focusout(handleFileNameChange);
+    });
+  }, 2 * 1000);
 
   console.log('recorded files: ', recordedFiles.reverse().join(','));
 

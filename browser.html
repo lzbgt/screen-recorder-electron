@@ -28,26 +28,19 @@
             <button class="icon icon-pause flex-item" action="pause"></button>
             <button class="icon icon-stop flex-item" action="stop"></button> -->
             <button class="icon icon-play flex-item" action="playvideo">播放视频文件</button>
+            <button class="icon icon-folder flex-item" action="opendir">打开文件夹</button>
             <button class="icon icon-help flex-item" action="help"></button>
           </div>
           <div id="audios" class="flex-right outline"></div>
         </div>
-        <div id="recordContent" class="outline t0b0 flex-group">
-          <div id="editor-1" class="outline editor flex-item t0b0">
-          <div class="flex" style="min-width:200px;">
-            <button class="flex-item icon icon-list active">视频列表</button>
-            <button class="flex-item icon icon-folder" style="color:goldenrod;" id="explore_files">打开目录</button>
+        <div id="recordContent" class="outline t0b0">
+          <div id="lastvideo" style="border: 1px solid green; margin-top: auto; text-align:center">
           </div>
-          <div id="videoslist" class="flex-group flex-column">
-            <!-- <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div> -->
-          </div>
-          </div>
-          <div class="divider" id="divider-1"></div>
-          <div id="editor-2" class="outline  editor flex-item6 t0b0">
-          <video style="width:100%;" controls>
-            <source src="" type="video/mp4">
-            Your browser does not support HTML5 video.
-          </video>
+          <div id="editor-2" class="outline editor t0b0">
+            <video style="width:100%;" controls>
+              <source src="" type="video/mp4">
+              Your browser does not support HTML5 video.
+            </video>
           </div>
         </div>
       </div>

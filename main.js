@@ -61,7 +61,7 @@ app.on('ready', function() {
     var cmd = `cmd /c wscript resources\\app\\bin\\pen.vbs ${r} ${g} ${b}`;
     exec(cmd);
   }
-  mainWindow = new BrowserWindow({minWidth: 1024, minHeight: 550, width: 1024, height: 550, icon:__dirname+'/images/yj.ico' });
+  mainWindow = new BrowserWindow({minWidth: 800, minHeight: 500, width: 800, height: 500, icon:__dirname+'/images/yj.ico' });
   mainWindow.setMenu(null);
   mainWindow.loadURL('file://' + __dirname + '/browser.html');
   // check for update
