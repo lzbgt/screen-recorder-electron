@@ -509,7 +509,7 @@ function loadVideo(filename){
               alert('文件不存在: ' + filename + '.mp4');
               return;
             }
-            fs.rename(outputDir+ filename + '.mp4', outputDir+ file + '.mp4', function(err, data){
+            fs.rename(outputDir+ filename + '.mp4', outputDir + file + '.mp4', function(err, data){
               if(err) {
                 // alert('重命名文件失败, 请检查目录和文件的权限及是否存在.');
                 console.error('重命名文件失败: ' + JSON.stringify(err));
