@@ -381,8 +381,11 @@ function record(){
   });
   recordStatus = 'recording';
   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'recording'}));
-/*   $('button[action]').removeClass('heart');
-  $('button[action="record"]').addClass('heart'); */
+}
+
+function loadVideo(filename){
+  $('#editor-2 > video > source').attr('src', outputDirUnix + filename);
+  $('#editor-2 > video').get(0).load();
 }
 
 function stop(pause){
@@ -409,8 +412,6 @@ function stop(pause){
     if(pause) {
       recordStatus = 'paused';
       pausedVideos.add(currentFileName);
-    /*   $('button[action]').removeClass('heart');
-      $('button[action="pause"]').addClass('heart'); */
       return;
     }else{
       recordStatus = 'stopped';
@@ -435,47 +436,46 @@ function stop(pause){
     var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
     var cmd = cmdCombineVideos.replace('<filename>', filename);
     cmd = ffmpegPath + ' ' + cmd;
-    combine = exec(cmd);
-    console.log('combining:', cmd);
-    combine.stdout.on('data',(data) => {
-      console.log(data);
-    });
 
-    combine.stderr.on('data',(data) => {
-      console.log(data);
-    });
-
-    combine.on('close', (code) => {
-      console.log(`combine process exited with code ${code}`);
-      // remove segmentation files
-      pausedVideos_.forEach( function(ele) {
-        setTimeout(()=>{
-          fs.unlink(ele);
-          console.log('unlinked:', ele);
-        },10*1000);
+    setTimeout(function(){
+      var combine = exec(cmd);
+      console.log('combining:', cmd);
+      combine.stdout.on('data',(data) => {
+        console.log(data);
       });
-      pausedVideos_.clear();
-      pausedVideos_ = null;
 
-    });
+      combine.stderr.on('data',(data) => {
+        console.log(data);
+      });
+
+      combine.on('close', (code) => {
+        console.log(`combine process exited with code ${code}`);
+        // remove segmentation files
+        pausedVideos_.forEach( function(ele) {
+          setTimeout(()=>{
+            // fs.unlink(ele);
+            console.log('unlinked:', ele);
+          },10*1000);
+        });
+        pausedVideos_.clear();
+        pausedVideos_ = null;
+      });
+    }, 5* 1000);
     recordedFiles.push(filename);
   }else {
     // do nothing
     recordedFiles.push(currentFileName);
   }
 
-function loadVideo(filename){
-  $('#editor-2 > video > source').attr('src', outputDirUnix + filename);
-  $('#editor-2 > video').get(0).load();
-}
-  // <div class="flex-item flex-group"><div>11223344.mp4</div> <button class="icon icon-pencil"></button></div>
   var lastFile = recordedFiles[recordedFiles.length-1];
   lastFile = lastFile.slice(lastFile.lastIndexOf('\\') + 1)
   var newRecHTML = '<div class="flex-left"><div id="vfilename"><div>'+lastFile+'</div></div> <button style="margin-left:30px;" class="icon icon-pencil"></button></div>'
   $('#lastvideo').html(newRecHTML);
+  $('#message').html('正在生成视频, 请稍后...');
   setTimeout(function(){
     // load video
     loadVideo(lastFile);
+    $('#message').html('');
 
     // register events
     $('button.icon-pencil').on('click', function(){
@@ -527,7 +527,7 @@ function loadVideo(filename){
       $("#vfilename>input").keyup(handleFileNameChange);
       $("#vfilename>input").focusout(handleFileNameChange);
     });
-  }, 2 * 1000);
+  }, 6 * 1000);
 
   console.log('recorded files: ', recordedFiles.reverse().join(','));
 
