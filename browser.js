@@ -1,5 +1,9 @@
 const {dialog} = require('electron').remote;
 
+const DURATION_PROCESS_HANG_BEFORE_KILL = 30 * 1000;
+const DURATION_BEFORE_VIDEOS_COMBINATION = 10 * 1000;
+const DURATION_VIDEOS_UNLINK =  10 * 1000;
+
 var isLoading = false;
 var default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
 var fs = require('fs'), assert = require('assert');
@@ -202,10 +206,15 @@ const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -framerate 15 -r 
 // const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264  -preset medium -tune zerolatency  -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 const cmdCombineVideos = `-y -f concat -safe 0 -i list.txt -c copy <filename>`;
 var audioDevList = null;
-var pausedVideos = new Set();
+
+// fileA and B are used to combine paused files;
+var videoFileA = null;
+var videoFileB = null;
+var isFinished = true;
+
 var recordStatus = 'init';
-var currentFileName = '';
-var recordedFiles = [];
+// var currentFileName = '';
+// var recordedFiles = [];
 const outputDir = 'resources\\app\\videos\\';
 const outputDirUnix = 'videos/';
 const appTitle = document.title;
@@ -354,6 +363,11 @@ function record(){
     return;
   }
 
+  if(!/(paused)|(init)/.test(recordStatus)) {
+    console.log('invalid state: ', recordStatus);
+    return;
+  }
+
   var audioDev = $("select").val();
   if(typeof audioDev === 'undefined' || audioDev === '') {
     alert('没有录音设备');
@@ -366,7 +380,18 @@ function record(){
   var cmd = cmdRecord.replace('<audiodev>', audioDevList[audioDev]).replace('<filename>', filename);
   console.log('cmd: ',ffmpegPath + ' ' +cmd);
   ffmpeg = exec(ffmpegPath + ' ' + cmd);
-  currentFileName = filename;
+  if(videoFileA && videoFileB) {
+    console.log('invalid state: have both videoFileA and videoFileB');
+    return;
+  }
+  isFinished = false;
+
+// store the video segments;
+  if(videoFileA) {
+    videoFileB = filename;
+  }else {
+    videoFileA = filename;
+  }
 
   ffmpeg.stdout.on('data',(data) => {
     console.log(data);
@@ -378,9 +403,138 @@ function record(){
 
   ffmpeg.on('close', (code) => {
     console.log(`child process exited with code ${code}`);
+    // do video combination
+    doVideoCombination();
   });
   recordStatus = 'recording';
   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'recording'}));
+}
+
+function showVideo(){
+  var lastFile = videoFileA.slice(videoFileA.lastIndexOf('\\') + 1);
+  var newRecHTML = '<div class="flex-left"><div id="vfilename"><div>'+lastFile+'</div></div> <button disabled="disabled" style="margin-left:30px;" class="icon icon-pencil"></button></div>'
+  $('#lastvideo').html(newRecHTML);
+  $('#message').html('正在生成视频, 请稍后...');
+
+  if(isFinished) {
+    $("#lastvideo button").removeAttr('disabled');
+    videoFileA = null;
+    videoFileB = null;
+  }
+
+  loadVideo(lastFile);
+  $('#message').html('');
+
+  // register events
+  $('button.icon-pencil').on('click', function(){
+    $("#vfilename>button").attr('disabled', 'disabled');
+    var filename = $('#vfilename > div').html();
+    filename = filename.slice(0, filename.lastIndexOf('.'));
+    $('#vfilename').html('<input value="' + filename+ '" />');
+    // register enter key event
+    function handleFileNameChange(event){
+      $("#lastvideo button").removeAttr('disabled');
+      if(event.keyCode == 13 || event.type == 'focusout'){
+        // rename file and bur
+        var file = $(event.target).val();
+        var existed = false;
+        try {
+          fs.accessSync(outputDir+ file + '.mp4', fs.F_OK);
+          // exist
+          existed = true;
+        } catch (e) {
+        }
+
+        if(existed) {
+          alert('同名文件已经存在! 请换个名字');
+          return;
+        }
+
+        if(file.length > 0) {
+          try {
+            fs.accessSync(outputDir+ filename + '.mp4', fs.F_OK);
+          } catch (e) {
+            alert('文件不存在: ' + filename + '.mp4');
+            return;
+          }
+          fs.rename(outputDir+ filename + '.mp4', outputDir + file + '.mp4', function(err, data){
+            if(err) {
+              // alert('重命名文件失败, 请检查目录和文件的权限及是否存在.');
+              console.error('重命名文件失败: ' + JSON.stringify(err));
+            }else{
+              $('#vfilename').html('<div>' + file+ '.mp4 </div>');
+              loadVideo(file+ '.mp4');
+            }
+          });
+        }else{
+          $('#vfilename').html('<div>' + filename+ '.mp4 </div>');
+        }
+      }
+    }
+
+    $("#vfilename>input").keyup(handleFileNameChange);
+    $("#vfilename>input").focusout(handleFileNameChange);
+  });
+
+  // reset
+  videoFileB = null;
+  // recordStatus = 'init';
+}
+
+function doVideoCombination(){
+  // check status
+  if(videoFileA && videoFileB) {
+    // generate listfile
+    var filesListText = [videoFileA, videoFileB].reduce(function(a,b){return a + 'file ' + b + '\n'}, '');
+    filesListText = filesListText.replace(/\\/g, '\\\\');
+    fs.writeFile('list.txt', filesListText, function (err) {
+      if (err) throw err;
+    });
+
+    // combine them all
+    var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
+    var cmd = cmdCombineVideos.replace('<filename>', filename);
+    cmd = ffmpegPath + ' ' + cmd;
+    lastVA = videoFileA;
+    lastVB = videoFileB;
+    videoFileA = filename;
+
+    var combine = exec(cmd);
+    console.log('combining:', cmd);
+    combine.stdout.on('data',(data) => {
+      console.log(data);
+    });
+
+    combine.stderr.on('data',(data) => {
+      console.log(data);
+    });
+
+    combine.on('close', (code) => {
+      console.log(`combine process exited with code ${code}`);
+      if(code != 0) {
+        alert('合并视频执行失败');
+        return;
+      }
+      // rename files
+      fs.rename(lastVA, outputDir + '_' + lastVA.slice(lastVA.lastIndexOf('\\') + 1), function(err, data){
+        if(err) {
+          console.error(JSON.stringify(err));
+        }
+      });
+      fs.rename(lastVB, outputDir + '_' + lastVB.slice(lastVB.lastIndexOf('\\') + 1), function(err, data){
+        if(err) {
+          console.error(JSON.stringify(err));
+        }
+      });
+      showVideo();
+      // TODO: really delete these segmentation video files ?
+      // fs.unlink(ele);
+    });
+  }else if(videoFileA) {
+    showVideo();
+  }else {
+    console.log('nothing');
+  }
 }
 
 function loadVideo(filename){
@@ -399,143 +553,25 @@ function stop(pause){
   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'stopped'}));
 
   console.log('quiting');
-  if(ffmpeg) {
+  if(ffmpeg){
     ffmpeg.stdin.write('q');
     // safely kill
     var dump = ffmpeg;
     setTimeout(function(){
       dump.kill('SIGINT');
-    },120 * 1000);
+    }, DURATION_PROCESS_HANG_BEFORE_KILL);
 
     ffmpeg = null;
     console.log('done');
-    if(pause) {
-      recordStatus = 'paused';
-      pausedVideos.add(currentFileName);
-      return;
-    }else{
-      recordStatus = 'stopped';
-    }
   }
-
-  // having paused files
-  if(currentFileName) {
-    pausedVideos.add(currentFileName);
+  if(pause) {
+    recordStatus = 'paused';
+    return;
+  }else{
+    // recordStatus = 'stopped';
+    recordStatus = 'init';
+    isFinished = true;
   }
-
-  if(pausedVideos.size > 1) {
-    var pausedVideos_ = pausedVideos;
-    // generate listfile
-    var filesListText = [...pausedVideos].reduce(function(a,b){return a + 'file ' + b + '\n'}, '');
-    filesListText = filesListText.replace(/\\/g, '\\\\');
-    fs.writeFile('list.txt', filesListText, function (err) {
-      if (err) throw err;
-    });
-
-    // combine them all
-    var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
-    var cmd = cmdCombineVideos.replace('<filename>', filename);
-    cmd = ffmpegPath + ' ' + cmd;
-
-    setTimeout(function(){
-      var combine = exec(cmd);
-      console.log('combining:', cmd);
-      combine.stdout.on('data',(data) => {
-        console.log(data);
-      });
-
-      combine.stderr.on('data',(data) => {
-        console.log(data);
-      });
-
-      combine.on('close', (code) => {
-        console.log(`combine process exited with code ${code}`);
-        // remove segmentation files
-        pausedVideos_.forEach( function(ele) {
-          setTimeout(()=>{
-            // fs.unlink(ele);
-            console.log('unlinked:', ele);
-          },10*1000);
-        });
-        pausedVideos_.clear();
-        pausedVideos_ = null;
-      });
-    }, 5* 1000);
-    recordedFiles.push(filename);
-  }else {
-    // do nothing
-    recordedFiles.push(currentFileName);
-  }
-
-  var lastFile = recordedFiles[recordedFiles.length-1];
-  lastFile = lastFile.slice(lastFile.lastIndexOf('\\') + 1)
-  var newRecHTML = '<div class="flex-left"><div id="vfilename"><div>'+lastFile+'</div></div> <button style="margin-left:30px;" class="icon icon-pencil"></button></div>'
-  $('#lastvideo').html(newRecHTML);
-  $('#message').html('正在生成视频, 请稍后...');
-  setTimeout(function(){
-    // load video
-    loadVideo(lastFile);
-    $('#message').html('');
-
-    // register events
-    $('button.icon-pencil').on('click', function(){
-      $("#vfilename>button").attr('disabled', 'disabled');
-      var filename = $('#vfilename > div').html();
-      filename = filename.slice(0, filename.lastIndexOf('.'));
-      $('#vfilename').html('<input value="' + filename+ '" />');
-      // register enter key event
-      function handleFileNameChange(event){
-        $("#vfilename>button").removeAttr('disabled');
-        if(event.keyCode == 13 || event.type == 'focusout'){
-          // rename file and bur
-          var file = $(event.target).val();
-          var existed = false;
-          try {
-            fs.accessSync(outputDir+ file + '.mp4', fs.F_OK);
-            // exist
-            existed = true;
-          } catch (e) {
-          }
-
-          if(existed) {
-            alert('同名文件已经存在! 请换个名字');
-            return;
-          }
-
-          if(file.length > 0) {
-            try {
-              fs.accessSync(outputDir+ filename + '.mp4', fs.F_OK);
-            } catch (e) {
-              alert('文件不存在: ' + filename + '.mp4');
-              return;
-            }
-            fs.rename(outputDir+ filename + '.mp4', outputDir + file + '.mp4', function(err, data){
-              if(err) {
-                // alert('重命名文件失败, 请检查目录和文件的权限及是否存在.');
-                console.error('重命名文件失败: ' + JSON.stringify(err));
-              }else{
-                $('#vfilename').html('<div>' + file+ '.mp4 </div>');
-                loadVideo(file+ '.mp4');
-              }
-            });
-          }else{
-            $('#vfilename').html('<div>' + filename+ '.mp4 </div>');
-          }
-        }
-      }
-
-      $("#vfilename>input").keyup(handleFileNameChange);
-      $("#vfilename>input").focusout(handleFileNameChange);
-    });
-  }, 6 * 1000);
-
-  console.log('recorded files: ', recordedFiles.reverse().join(','));
-
-  // reset
-  pausedVideos = new Set();
-  currentFileName = '';
-  recordStatus = 'init';
-  /* $('button[action]').removeClass('heart'); */
 }
 
 function pause() {
