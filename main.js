@@ -2,6 +2,7 @@ const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray} = requir
 
 const ps = require('ps-node');
 const exec = require('child_process').exec
+const execSync = require('child_process').execSync
 
 const http = require('http');
 const tar = require("tar")
@@ -132,7 +133,7 @@ app.on('ready', function() {
 
   function setPenColor(r,g,b) {
     var cmd = `cmd /c wscript resources\\app\\bin\\pen.vbs ${r} ${g} ${b}`;
-    exec(cmd);
+    execSync(cmd);
   }
   mainWindow = new BrowserWindow({minWidth: 800, minHeight: 500, width: 800, height: 500, icon:__dirname+'/images/yj.ico' });
   mainWindow.setMenu(null);
