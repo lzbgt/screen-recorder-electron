@@ -4,6 +4,7 @@ const ps = require('ps-node');
 const exec = require('child_process').exec
 
 const http = require('http');
+const tar = require("tar")
 const fs = require('fs');
 const WEB_STATIC_HOST = 'cdn-ali-static.zgyjyx.com';
 const UPDATE_PATH = '/update/rec_tool/';
@@ -27,7 +28,29 @@ function checkUpdate(){
       });
       response.on('end', function() {
           console.log('update info:', body);
-          var updateInfo = JSON.parse(body);
+          // get local version
+          var updateInfo = null;
+          try{
+            updateInfo = JSON.parse(body);
+            if(!updateInfo){
+              console.log('error query update information:', JSON.stringify(e));
+              return;
+            }
+          }catch(e){
+            console.log('error query update information:', JSON.stringify(e));
+            return;
+          }
+          try {
+            fs.accessSync('ver.info', fs.F_OK);
+            var localVer = fs.readFileSync('ver.info').toString();
+            if(localVer != updateInfo.version && localVer != 'undefined') {
+              // continue the upgrade process
+            }else{
+              return;
+            }
+          } catch (e) {
+            console.log('error:', JSON.stringify(e));
+          }
           // get the package
           var file = fs.createWriteStream(updateInfo.package);
           var request = http.get('http://'+WEB_STATIC_HOST + UPDATE_PATH + updateInfo.package, function(response) {
@@ -35,13 +58,32 @@ function checkUpdate(){
           });
 
           file.on('finish', ()=>{
-            console.log('file got:', updateInfo.package);
+            console.log('new version package downloaded:', updateInfo.package);
+            var extractor = tar.Extract({path:"resources/1/"})
+              .on('error', (err)=> {
+                console.error('error:', err);
+              }).on('end', ()=>{
+                console.log('extracted');
+                //write localVer
+                fs.writeFile('ver.info', updateInfo.version, function(err){
+                  console.error('error:', JSON.stringify(err));
+                });
+                globalShortcut.unregisterAll();
+                dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: []});
+                setTimeout(()=>{
+                  exec(process.execPath);
+                  app.quit();
+                }, 1 * 1000);
+              });
+
+            fs.createReadStream(updateInfo.package)
+              .on('error', (err)=> {
+                console.error('error:', err);
+              }).pipe(extractor);
           });
       });
   });
 }
-
-checkUpdate();
 
 //
 var trayBlinkTimer = null;
@@ -96,6 +138,7 @@ app.on('ready', function() {
   mainWindow.setMenu(null);
   mainWindow.loadURL('file://' + __dirname + '/browser.html');
   // check for update
+  checkUpdate();
 
   //mainWindow.openDevTools();
   var lastF10 = 0;
@@ -212,7 +255,6 @@ app.on('ready', function() {
   if (!ret) {
     dialog.showErrorBox('','注册热键失败， 请检查F10,F11是否被其他程序绑定后再启动');
   }
-
 
   //
   var quit = false;
