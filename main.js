@@ -3,14 +3,45 @@ const {app, BrowserWindow, ipcMain, Menu, globalShortcut, dialog, Tray} = requir
 const ps = require('ps-node');
 const exec = require('child_process').exec
 
-var rec_tool_url = 'update.zgyjyx.com/tools/scree-rec'
-
+const http = require('http');
+const fs = require('fs');
+const WEB_STATIC_HOST = 'cdn-ali-static.zgyjyx.com';
+const UPDATE_PATH = '/update/rec_tool/';
 
 let mainWindow;
 
 app.on('window-all-closed', function() {
   app.quit();
 });
+
+// check for update information
+function checkUpdate(){
+  return http.get({
+      host: WEB_STATIC_HOST,
+      path: UPDATE_PATH + 'ver.info'
+  }, function(response) {
+      // Continuously update stream with data
+      var body = '';
+      response.on('data', function(d) {
+          body += d;
+      });
+      response.on('end', function() {
+          console.log('update info:', body);
+          var updateInfo = JSON.parse(body);
+          // get the package
+          var file = fs.createWriteStream(updateInfo.package);
+          var request = http.get('http://'+WEB_STATIC_HOST + UPDATE_PATH + updateInfo.package, function(response) {
+            response.pipe(file);
+          });
+
+          file.on('finish', ()=>{
+            console.log('file got:', updateInfo.package);
+          });
+      });
+  });
+}
+
+checkUpdate();
 
 //
 var trayBlinkTimer = null;
@@ -109,6 +140,9 @@ app.on('ready', function() {
   var isPaused = false;
   var lastF11 = 0;
   ret = ret && globalShortcut.register('F11', () => {
+    if(!isRecording) {
+      return;
+    }
     var now = new Date().getTime()/1000;
     var delta = now - lastF11;
     if(delta < PREVENT_INTERVAL) {
@@ -168,6 +202,11 @@ app.on('ready', function() {
   // red pen
   ret = ret && globalShortcut.register('shift+alt+5', () => {
     setPenColor(255,0,0);
+  })
+
+  // reload mainwindow
+  ret = ret && globalShortcut.register('ctrl+F12', () => {
+    mainWindow.reload();
   })
 
   if (!ret) {
