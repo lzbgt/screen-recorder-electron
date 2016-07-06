@@ -59,7 +59,7 @@ function checkUpdate(){
 
           file.on('finish', ()=>{
             console.log('new version package downloaded:', updateInfo.package);
-            var extractor = tar.Extract({path:"resources/1/"})
+            var extractor = tar.Extract({path:"resources/"})
               .on('error', (err)=> {
                 console.error('error:', err);
               }).on('end', ()=>{
