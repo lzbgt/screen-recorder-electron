@@ -134,6 +134,8 @@ app.on('ready', function() {
   function setPenColor(r,g,b) {
     var cmd = `cmd /c wscript resources\\app\\bin\\pen.vbs ${r} ${g} ${b}`;
     execSync(cmd);
+    // run it twice for double click issue on windows 7
+    execSync(cmd);
   }
   mainWindow = new BrowserWindow({minWidth: 800, minHeight: 500, width: 800, height: 500, icon:__dirname+'/images/yj.ico' });
   mainWindow.setMenu(null);
@@ -143,7 +145,7 @@ app.on('ready', function() {
 
   //mainWindow.openDevTools();
   var lastF10 = 0;
-  const PREVENT_INTERVAL = 2; // 2 seconds
+  const PREVENT_INTERVAL = 5; //
   var ret = globalShortcut.register('F10', () => {
     var now = new Date().getTime()/1000;
     var delta = now - lastF10;
@@ -192,6 +194,12 @@ app.on('ready', function() {
     if(delta < PREVENT_INTERVAL) {
       return;
     }
+
+    // recording delta
+    if((now - lastF10) < PREVENT_INTERVAL) {
+      return;
+    }
+
     lastF11 = new Date().getTime()/1000;
     // console.log('F11 is pressed');
     if(isRecording && !isPaused) {
@@ -260,6 +268,7 @@ app.on('ready', function() {
   //
   var quit = false;
   mainWindow.on('close', function(event){
+    globalShortcut.unregisterAll();
     appIcon.destroy();
     if(!quit) {
       event.preventDefault();
