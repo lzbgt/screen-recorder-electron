@@ -179,9 +179,10 @@ app.on('ready', function() {
         },0.5 * 1000);
       }, 2 * 1000);
     }else{
+	  isPaused = false;
       stillTray();
       mainWindow.send('hotkey', {data:'F10'});
-      // show the message 1s later
+      // show the message 1.5s later
       setTimeout(function(){
         var win = new BrowserWindow({width: 200, height: 60, frame: false, parent:mainWindow, backgroundColor:'#F0FF33'});
         win.loadURL('file://' + __dirname + '/stop.html');
@@ -190,7 +191,7 @@ app.on('ready', function() {
           win.close();
           mainWindow.focus();
         }, 1 * 1000);
-      }, 1 * 1000);
+      }, 1.5 * 1000);
     }
   });
 

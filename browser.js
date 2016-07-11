@@ -401,6 +401,12 @@ function record(){
   isFinished = false;
 
 // store the video segments;
+  
+  if(videoFileB) {
+	  console.warn('请等待录制完成');
+	  alert('上次录制仍在处理中， 请等待完成');
+	  return;
+  }
   if(videoFileA) {
     videoFileB = filename;
   }else {
@@ -569,6 +575,18 @@ function stop(pause){
   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'stopped'}));
 
   console.log('quiting');
+  
+  if(pause) {
+    recordStatus = 'paused';
+  }else{
+    if(recordStatus == 'paused') {
+	  videoFileA = null;
+	  videoFileB = null;
+	}
+    recordStatus = 'init';
+    isFinished = true;
+  }
+  
   if(ffmpeg){
     ffmpeg.stdin.write('q');
     // safely kill
@@ -579,14 +597,6 @@ function stop(pause){
 
     ffmpeg = null;
     console.log('done');
-  }
-  if(pause) {
-    recordStatus = 'paused';
-    return;
-  }else{
-    // recordStatus = 'stopped';
-    recordStatus = 'init';
-    isFinished = true;
   }
 }
 
