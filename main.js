@@ -57,7 +57,7 @@ function checkUpdate(){
           }
           if(newVersion) {
             var promptUpgrade = dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: ['现在升级', '暂不升级'], cancelId:1});
-            if(promptUpgrad) {
+            if(promptUpgrade) {
               return;
             }
           }
