@@ -269,7 +269,18 @@ function doInit(){
         break;
 
       case 'help':
-        alert('建议录制不要少于10秒钟, 以免视频生成失败\r\n如果发生问题, 请重启软件\r\nF10: 录制/结束\r\nF11: 暂停/继续\r\n播放视频文件: 选择本地视频文件播放');
+        {
+          var localVer = null
+          try{
+            localVer = fs.readFileSync('ver.info').toString();
+          }catch(e){
+            console.log("error read file ver.info:", JSON.stringify(e));
+          }
+
+          alert('建议录制不要少于10秒钟, 以免视频生成失败\r\n如果发生问题, 请重启软件\r\nF10: 录制/结束\r\nF11: 暂停/继续\r\n播放视频文件: 选择本地视频文件播放' + (localVer?('\r\n当前版本:' + localVer):''));
+        }
+        break;
+
       default:
         console.log('unknown action:', btn);
     }
