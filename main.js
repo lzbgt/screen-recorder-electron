@@ -41,20 +41,25 @@ function checkUpdate(){
             console.log('error query update information:', JSON.stringify(e));
             return;
           }
+          var newVersion = false;
           try {
             fs.accessSync('ver.info', fs.F_OK);
             var localVer = fs.readFileSync('ver.info').toString();
             if(localVer != updateInfo.version && localVer != 'undefined') {
               // continue the upgrade process
-              var promptUpgrade = dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: ['现在升级', '暂不升级'], cancelId:1});
-              if(promptUpgrad) {
-                return;
-              }
+              newVersion = true;
             }else{
               return;
             }
           } catch (e) {
             console.log('error:', JSON.stringify(e));
+            newVersion = true;
+          }
+          if(newVersion) {
+            var promptUpgrade = dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: ['现在升级', '暂不升级'], cancelId:1});
+            if(promptUpgrad) {
+              return;
+            }
           }
           // get the package
           var file = fs.createWriteStream(updateInfo.package);
