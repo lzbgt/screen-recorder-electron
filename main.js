@@ -42,9 +42,11 @@ function checkUpdate(){
             return;
           }
           var newVersion = false;
+          var currentVer = null;
           try {
             fs.accessSync('ver.info', fs.F_OK);
             var localVer = fs.readFileSync('ver.info').toString();
+            currentVer = localVer;
             if(localVer != updateInfo.version && localVer != 'undefined') {
               // continue the upgrade process
               newVersion = true;
@@ -56,7 +58,7 @@ function checkUpdate(){
             newVersion = true;
           }
           if(newVersion) {
-            var promptUpgrade = dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: ['现在升级', '暂不升级'], cancelId:1});
+            var promptUpgrade = dialog.showMessageBox({title:'发现新版本可以升级', message: '新版本: '+ updateInfo.version + '\r\n当前版本: ' + currentVer, buttons: ['现在升级', '暂不升级'], cancelId:1});
             if(promptUpgrade) {
               return;
             }
