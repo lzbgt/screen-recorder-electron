@@ -202,8 +202,8 @@ function closeBoxes() {
 var ffmpeg = null;
 const ffmpegPath = 'resources\\app\\bin\\ffmpeg.exe';
 const cmdListAudioDev = '-list_devices true -f dshow -i dummy'.split(' ');
-const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -framerate 15 -r 15 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -b:v 550K -crf 35 -preset medium -tune zerolatency -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
-// const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264  -preset medium -tune zerolatency  -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
+const cmdRecord = `-y -f gdigrab -draw_mouse 1 -framerate 15 -r 15 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -b:v 550K -crf 35 -preset medium -tune zerolatency -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 100M -movflags +faststart <filename>`;
+//const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -framerate 15 -r 15 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -b:v 550K -crf 35 -preset medium -tune zerolatency -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 const cmdCombineVideos = `-y -f concat -safe 0 -i list.txt -c copy <filename>`;
 var audioDevList = null;
 
@@ -226,7 +226,7 @@ function doInit(){
   }
 
   document.body.ondrop = (ev) => {
-    alert(ev.dataTransfer.files[0].path);
+    loadVideo(ev.dataTransfer.files[0].path, 1);
     ev.preventDefault();
   }
   try {
@@ -259,6 +259,9 @@ function doInit(){
             { name: 'x264 Video', extensions: ['mp4'] }
           ]},function(file){
             console.log(file);
+            if(!file) {
+              return;
+            }
             $('#editor-2 > video > source').attr('src', 'file://'+file[0]);
             $('#editor-2 > video').get(0).load();
           });
@@ -427,18 +430,12 @@ function showVideo(){
   $('#lastvideo').html(newRecHTML);
   $('#message').html('正在生成视频, 请稍后...');
 
-  if(isFinished) {
-    $("#lastvideo button").removeAttr('disabled');
-    videoFileA = null;
-    videoFileB = null;
-  }
-
   loadVideo(lastFile);
   $('#message').html('');
 
   // register events
   $('button.icon-pencil').on('click', function(){
-    $("#vfilename>button").attr('disabled', 'disabled');
+    $("#lastvideo button").attr('disabled', 'disabled');
     var filename = $('#vfilename > div').html();
     filename = filename.slice(0, filename.lastIndexOf('.'));
     $('#vfilename').html('<input value="' + filename+ '" />');
@@ -490,6 +487,11 @@ function showVideo(){
   // reset
   videoFileB = null;
   // recordStatus = 'init';
+  if(isFinished) {
+    $("#lastvideo button").removeAttr('disabled');
+    videoFileA = null;
+    videoFileB = null;
+  }
 }
 
 function doVideoCombination(){
@@ -524,6 +526,9 @@ function doVideoCombination(){
       console.log(`combine process exited with code ${code}`);
       if(code != 0) {
         alert('合并视频执行失败');
+        videoFileA = null;
+        videoFileB = null;
+        console.error("合并视频失败: ", code);
         return;
       }
       // rename files
@@ -548,8 +553,8 @@ function doVideoCombination(){
   }
 }
 
-function loadVideo(filename){
-  $('#editor-2 > video > source').attr('src', outputDirUnix + filename);
+function loadVideo(filename, abs){
+  $('#editor-2 > video > source').attr('src', abs? ('file://'+filename) : (outputDirUnix + filename));
   $('#editor-2 > video').get(0).load();
 }
 
