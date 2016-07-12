@@ -4,7 +4,7 @@ const default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
 const fs = require('fs'), assert = require('assert');
 const execFile = require('child_process').execFile;
 const spawn = require('child_process').spawn;
-const exec = require('child_process').spawn;
+const exec = require('child_process').exec;
 const {ipcRenderer} = require('electron');
 
 const DURATION_PROCESS_HANG_BEFORE_KILL = 30 * 1000;
