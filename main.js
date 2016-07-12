@@ -12,6 +12,20 @@ const UPDATE_PATH = '/update/rec_tool/';
 
 let mainWindow;
 
+const util = require('util');
+const logFile = fs.createWriteStream('log.txt', { flags: 'a' });
+const logStdout = process.stdout;
+
+console.log = function () {
+  var d = new Date();
+  var prop = {timeZone:'Asia/Shanghai', hour12:false};
+  d.toLocaleDateString('ca', prop);
+  var ts = d.toLocaleTimeString('ca', prop);
+  logFile.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+  logStdout.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+}
+console.error = console.log;
+
 app.on('window-all-closed', function() {
   app.quit();
 });
@@ -90,7 +104,7 @@ function checkUpdate(){
 
             fs.createReadStream(updateInfo.package)
               .on('error', (err)=> {
-                console.error('error:', err);
+                console.error('error:', JSON.stringify(err));
               }).pipe(extractor);
           });
       });

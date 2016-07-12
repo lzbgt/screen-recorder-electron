@@ -1,15 +1,28 @@
 const {dialog} = require('electron').remote;
+var isLoading = false;
+const default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
+const fs = require('fs'), assert = require('assert');
+const execFile = require('child_process').execFile
+const exec = require('child_process').exec
+const {ipcRenderer} = require('electron');
 
 const DURATION_PROCESS_HANG_BEFORE_KILL = 30 * 1000;
 const DURATION_BEFORE_VIDEOS_COMBINATION = 10 * 1000;
 const DURATION_VIDEOS_UNLINK =  10 * 1000;
 
-var isLoading = false;
-var default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
-var fs = require('fs'), assert = require('assert');
-var execFile = require('child_process').execFile
-var exec = require('child_process').exec
-const {ipcRenderer} = require('electron');
+const util = require('util');
+const logFile = fs.createWriteStream('wlog.txt', { flags: 'a' });
+const logStdout = process.stdout;
+
+console.log = function () {
+  var d = new Date();
+  var prop = {timeZone:'Asia/Shanghai', hour12:false};
+  d.toLocaleDateString('ca', prop);
+  var ts = d.toLocaleTimeString('ca', prop);
+  logFile.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+  logStdout.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+}
+console.error = console.log;
 
 onload = function() {
   var webview = document.querySelector('webview');
@@ -302,6 +315,7 @@ function doInit(){
           break;
         case 'exit':
           stop();
+          break;
         default:
           console.log('unhandled event:', msg.data);
       }
@@ -401,7 +415,7 @@ function record(){
   isFinished = false;
 
 // store the video segments;
-  
+
   if(videoFileB) {
 	  console.warn('请等待录制完成');
 	  alert('上次录制仍在处理中， 请等待完成');
@@ -575,7 +589,7 @@ function stop(pause){
   ipcRenderer.send('asynchronous-message', JSON.stringify({event:'state', data:'stopped'}));
 
   console.log('quiting');
-  
+
   if(pause) {
     recordStatus = 'paused';
   }else{
@@ -586,7 +600,7 @@ function stop(pause){
     recordStatus = 'init';
     isFinished = true;
   }
-  
+
   if(ffmpeg){
     ffmpeg.stdin.write('q');
     // safely kill
