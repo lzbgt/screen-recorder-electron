@@ -2,8 +2,9 @@ const {dialog} = require('electron').remote;
 var isLoading = false;
 const default_url = 'http://www.zgyjyx.com/teacher/login/login.html';
 const fs = require('fs'), assert = require('assert');
-const execFile = require('child_process').execFile
-const exec = require('child_process').exec
+const execFile = require('child_process').execFile;
+const spawn = require('child_process').spawn;
+const exec = require('child_process').spawn;
 const {ipcRenderer} = require('electron');
 
 const DURATION_PROCESS_HANG_BEFORE_KILL = 30 * 1000;
@@ -14,15 +15,15 @@ const util = require('util');
 const logFile = fs.createWriteStream('wlog.txt', { flags: 'a' });
 const logStdout = process.stdout;
 
-console.log = function () {
-  var d = new Date();
-  var prop = {timeZone:'Asia/Shanghai', hour12:false};
-  d.toLocaleDateString('ca', prop);
-  var ts = d.toLocaleTimeString('ca', prop);
-  logFile.write(util.format.apply(null, [ts, ...arguments]) + '\n');
-  logStdout.write(util.format.apply(null, [ts, ...arguments]) + '\n');
-}
-console.error = console.log;
+// console.log = function () {
+//   var d = new Date();
+//   var prop = {timeZone:'Asia/Shanghai', hour12:false};
+//   d.toLocaleDateString('ca', prop);
+//   var ts = d.toLocaleTimeString('ca', prop);
+//   logFile.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+//   logStdout.write(util.format.apply(null, [ts, ...arguments]) + '\n');
+// }
+// console.error = console.log;
 
 onload = function() {
   var webview = document.querySelector('webview');
@@ -226,11 +227,39 @@ var videoFileB = null;
 var isFinished = true;
 
 var recordStatus = 'init';
-// var currentFileName = '';
-// var recordedFiles = [];
+
 const outputDir = 'resources\\app\\videos\\';
 const outputDirUnix = 'videos/';
 const appTitle = document.title;
+
+//
+function parseParmForSpawn(param) {
+  var leftQuote = false;
+  var ret = [];
+  var term = [];
+  for(var i = 0; i < param.length; i++) {
+    var e = param[i];
+    // ignore spaces
+    if(e == ' ' && !leftQuote) {
+      if(term) {
+        ret.push(term);
+        term = [];
+      }
+      continue;
+    }else if( (e != ' ') || (e == ' ' && leftQuote) ) {
+      if(e == '"') {
+        leftQuote = !leftQuote;
+      }else{
+        term.push(e);
+      }
+    }else{
+      console.error('shouldn\'t go here:', e, param);
+    }
+  }
+  // append the last term with no trailing blank
+  if(term) ret.push(term);
+  return ret.map((e)=>{return e.join('');});
+}
 
 //
 function doInit(){
@@ -406,8 +435,11 @@ function record(){
 
   var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
   var cmd = cmdRecord.replace('<audiodev>', audioDevList[audioDev]).replace('<filename>', filename);
-  console.log('cmd: ',ffmpegPath + ' ' +cmd);
-  ffmpeg = exec(ffmpegPath + ' ' + cmd);
+  console.log('full cmd: ', ffmpegPath + ' ' +cmd);
+  console.log('cmd: ', cmd);
+  cmd = parseParmForSpawn(cmd);
+  console.log('spawn cmd:', cmd);
+  ffmpeg = spawn(ffmpegPath, cmd);
   if(videoFileA && videoFileB) {
     console.log('invalid state: have both videoFileA and videoFileB');
     return;
@@ -428,11 +460,11 @@ function record(){
   }
 
   ffmpeg.stdout.on('data',(data) => {
-    console.log(data);
+    console.log(data.toString());
   });
 
   ffmpeg.stderr.on('data',(data) => {
-    console.log(data);
+    console.log(data.toString());
   });
 
   ffmpeg.on('close', (code) => {
@@ -527,12 +559,11 @@ function doVideoCombination(){
     // combine them all
     var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
     var cmd = cmdCombineVideos.replace('<filename>', filename);
-    cmd = ffmpegPath + ' ' + cmd;
     lastVA = videoFileA;
     lastVB = videoFileB;
     videoFileA = filename;
 
-    var combine = exec(cmd);
+    var combine = spawn(ffmpegPath, parseParmForSpawn(cmd));
     console.log('combining:', cmd);
     combine.stdout.on('data',(data) => {
       console.log(data);
@@ -605,9 +636,10 @@ function stop(pause){
     ffmpeg.stdin.write('q');
     // safely kill
     var dump = ffmpeg;
-    setTimeout(function(){
-      dump.kill('SIGINT');
-    }, DURATION_PROCESS_HANG_BEFORE_KILL);
+    // caused issue when deal with long time recording, commented out
+    // setTimeout(function(){
+    //   dump.kill('SIGINT');
+    // }, DURATION_PROCESS_HANG_BEFORE_KILL);
 
     ffmpeg = null;
     console.log('done');
