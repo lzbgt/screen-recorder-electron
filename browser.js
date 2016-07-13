@@ -211,6 +211,23 @@ function closeBoxes() {
   closeFindBox();
 }
 
+
+Date.prototype.Format = function (fmt) { //author: meizz
+    var o = {
+        "M+": this.getMonth() + 1, //月份
+        "d+": this.getDate(), //日
+        "h+": this.getHours(), //小时
+        "m+": this.getMinutes(), //分
+        "s+": this.getSeconds(), //秒
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+        "S": this.getMilliseconds() //毫秒
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+    if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+}
+
 ////////////////////////////////////////////////////////////////////
 //
 var ffmpeg = null;
@@ -426,14 +443,14 @@ function record(){
   }
 
   var audioDev = $("select").val();
-  if(typeof audioDev === 'undefined' || audioDev === '') {
+  if(typeof audioDev === 'undefined' || audioDev === '' || /not enumerate audio only devices/.test(audioDev)) {
     alert('没有录音设备');
     return;
   }
 
   console.log('audio dev:', audioDevList[audioDev]);
 
-  var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
+  var filename = (outputDir + new Date().Format("yyyyMMdd HH:mm:ss") + '.mp4').replace(/:| /g, '_');
   var cmd = cmdRecord.replace('<audiodev>', audioDevList[audioDev]).replace('<filename>', filename);
   console.log('full cmd: ', ffmpegPath + ' ' +cmd);
   console.log('cmd: ', cmd);
@@ -442,6 +459,12 @@ function record(){
   ffmpeg = spawn(ffmpegPath, cmd);
   if(videoFileA && videoFileB) {
     console.log('invalid state: have both videoFileA and videoFileB');
+
+    // reset status
+    videoFileA = null;
+    videoFileB = null;
+    isFinished = false;
+    recordStatus = 'init';
     return;
   }
   isFinished = false;
@@ -557,7 +580,7 @@ function doVideoCombination(){
     });
 
     // combine them all
-    var filename = (outputDir + new Date().toISOString().slice(0, 19) + '.mp4').replace(/:/g, '_');
+    var filename = (outputDir + new Date().Format("yyyyMMdd_HH:mm:ss") + '.mp4').replace(/:/g, '_');
     var cmd = cmdCombineVideos.replace('<filename>', filename);
     lastVA = videoFileA;
     lastVB = videoFileB;
