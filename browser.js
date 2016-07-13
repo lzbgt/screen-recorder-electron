@@ -11,9 +11,9 @@ const DURATION_PROCESS_HANG_BEFORE_KILL = 30 * 1000;
 const DURATION_BEFORE_VIDEOS_COMBINATION = 10 * 1000;
 const DURATION_VIDEOS_UNLINK =  10 * 1000;
 
-const util = require('util');
-const logFile = fs.createWriteStream('wlog.txt', { flags: 'a' });
-const logStdout = process.stdout;
+// const util = require('util');
+// const logFile = fs.createWriteStream('wlog.txt', { flags: 'a' });
+// const logStdout = process.stdout;
 
 // console.log = function () {
 //   var d = new Date();
