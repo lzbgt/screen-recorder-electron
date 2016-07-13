@@ -443,7 +443,7 @@ function record(){
   }
 
   var audioDev = $("select").val();
-  if(typeof audioDev === 'undefined' || audioDev === '' || /not enumerate audio only devices/.test(audioDev)) {
+  if(typeof audioDev === 'undefined' || audioDev === '' || || /not enumerate audio only devices/.test(audioDevList[audioDev])) {
     alert('没有录音设备');
     return;
   }
