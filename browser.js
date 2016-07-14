@@ -450,7 +450,7 @@ function record(){
 
   console.log('audio dev:', audioDevList[audioDev]);
 
-  var filename = (outputDir + new Date().Format("yyyyMMdd HH:mm:ss") + '.mp4').replace(/:| /g, '_');
+  var filename = (outputDir + new Date().Format("yyyyMMdd_hh_mm_ss") + '.mp4');
   var cmd = cmdRecord.replace('<audiodev>', audioDevList[audioDev]).replace('<filename>', filename);
   console.log('full cmd: ', ffmpegPath + ' ' +cmd);
   console.log('cmd: ', cmd);
@@ -580,7 +580,7 @@ function doVideoCombination(){
     });
 
     // combine them all
-    var filename = (outputDir + new Date().Format("yyyyMMdd_HH:mm:ss") + '.mp4').replace(/:/g, '_');
+    var filename = (outputDir + new Date().Format("yyyyMMdd_hh_mm_ss") + '.mp4');
     var cmd = cmdCombineVideos.replace('<filename>', filename);
     lastVA = videoFileA;
     lastVB = videoFileB;

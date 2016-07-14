@@ -11,6 +11,7 @@ const WEB_STATIC_HOST = 'cdn-ali-static.zgyjyx.com';
 const UPDATE_PATH = '/update/rec_tool/';
 
 let mainWindow;
+var upgrading = false;
 
 const util = require('util');
 const logFile = fs.createWriteStream('log.txt', { flags: 'a' });
@@ -77,6 +78,8 @@ function checkUpdate(){
               return;
             }
           }
+          //
+          upgrading = true;
           // get the package
           var file = fs.createWriteStream(updateInfo.package);
           var request = http.get('http://'+WEB_STATIC_HOST + UPDATE_PATH + updateInfo.package, function(response) {
