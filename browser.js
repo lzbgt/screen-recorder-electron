@@ -575,10 +575,7 @@ function doVideoCombination(){
     // generate listfile
     var filesListText = [videoFileA, videoFileB].reduce(function(a,b){return a + 'file ' + b + '\n'}, '');
     filesListText = filesListText.replace(/\\/g, '\\\\');
-    fs.writeFile('list.txt', filesListText, function (err) {
-      if (err) throw err;
-    });
-
+    fs.writeFileSync('list.txt', filesListText);
     // combine them all
     var filename = (outputDir + new Date().Format("yyyyMMdd_hh_mm_ss") + '.mp4');
     var cmd = cmdCombineVideos.replace('<filename>', filename);

@@ -81,7 +81,9 @@ function checkUpdate(){
           //
           upgrading = true;
           if(mainWindow) {
-            mainWindow.loadURL('http://www.zgyjyx.com/rectool_news.html');
+            var changelog = fs.readFileSync(__dirname + '/changelog-tmpl.html').toString().replace(/{newVersion}/g,updateInfo.version).replace(/newDate/g, updateInfo.time);
+            fs.writeFileSync(__dirname + '/changelog.html', changelog;);
+            mainWindow.loadURL('file://' + __dirname + '/changelog.html');
           }
           // get the package
           var file = fs.createWriteStream(updateInfo.package);
