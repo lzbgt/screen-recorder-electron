@@ -81,8 +81,8 @@ function checkUpdate(){
           //
           upgrading = true;
           if(mainWindow) {
-            var changelog = fs.readFileSync(__dirname + '/changelog-tmpl.html').toString().replace(/{newVersion}/g,updateInfo.version).replace(/newDate/g, updateInfo.time);
-            fs.writeFileSync(__dirname + '/changelog.html', changelog;);
+            var changelog = fs.readFileSync(__dirname + '/changelog-tmpl.html').toString().replace(/{newVersion}/g,updateInfo.version).replace(/{newDate}/g, updateInfo.time);
+            fs.writeFileSync(__dirname + '/changelog.html', changelog);
             mainWindow.loadURL('file://' + __dirname + '/changelog.html');
           }
           // get the package
