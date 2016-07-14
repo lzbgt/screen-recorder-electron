@@ -103,7 +103,7 @@ function checkUpdate(){
                   console.error('error:', JSON.stringify(err));
                 });
                 globalShortcut.unregisterAll();
-                dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: []});
+                //dialog.showMessageBox({title:'软件已更新至最新版本',message: '已完成自动更新, 按确认重启本软件', buttons: []});
                 setTimeout(()=>{
                   exec(process.execPath);
                   app.quit();
