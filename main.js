@@ -80,6 +80,9 @@ function checkUpdate(){
           }
           //
           upgrading = true;
+          if(mainWindow) {
+            mainWindow.loadURL('http://www.zgyjyx.com/rectool_news.html');
+          }
           // get the package
           var file = fs.createWriteStream(updateInfo.package);
           var request = http.get('http://'+WEB_STATIC_HOST + UPDATE_PATH + updateInfo.package, function(response) {
