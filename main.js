@@ -116,6 +116,8 @@ function checkUpdate(){
               }).pipe(extractor);
           });
       });
+  }).on('error', (e) => {
+    console.log(`网络连接失败: ${e.message}`);
   });
 }
 

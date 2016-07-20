@@ -233,7 +233,7 @@ Date.prototype.Format = function (fmt) { //author: meizz
 var ffmpeg = null;
 const ffmpegPath = 'resources\\app\\bin\\ffmpeg.exe';
 const cmdListAudioDev = '-list_devices true -f dshow -i dummy'.split(' ');
-const cmdRecord = `-y -f gdigrab -framerate 15 -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -r 15 -b:v 1M -crf 35 -preset medium -tune zerolatency -crf 35 -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 100M -movflags +faststart <filename>`;
+const cmdRecord = `-y -f gdigrab -framerate 15 -draw_mouse 1 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -r 15 -b:v 1M -crf 35 -preset medium -tune zerolatency -crf 35 -pix_fmt yuv420p -c:a libfdk_aac -ac 2 -b:a 48k -fs 100M -movflags +faststart <filename>`;
 //const cmdRecord = `-y -rtbufsize 100M -f gdigrab -draw_mouse 1 -framerate 15 -r 15 -i desktop -f dshow -i audio="<audiodev>" -af "highpass=f=200, lowpass=f=3000" -c:v libx264 -b:v 550K -crf 35 -preset medium -tune zerolatency -pix_fmt yuv420p -c:a libvorbis -ac 2 -b:a 48k -fs 50M -movflags +faststart <filename>`;
 const cmdCombineVideos = `-y -f concat -safe 0 -i list.txt -c copy <filename>`;
 var audioDevList = null;
