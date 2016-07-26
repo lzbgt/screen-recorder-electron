@@ -482,16 +482,38 @@ function record(){
     videoFileA = filename;
   }
 
+  var guardNumber = 0;
+  var guardNumberOld = 0;
+  var guardTimer = setInterval(function(){
+    if(guardNumber == guardNumberOld) {
+      alert('声卡检测失败, 无法录制\r\n请停止并检查声卡连接稳定后重试');
+      clearInterval(guardTimer);
+      throw new Error("声卡检测失败");
+    }
+    guardNumberOld = guardNumber;
+  }, 5*1000);
+
   ffmpeg.stdout.on('data',(data) => {
+    guardNumber++;
     console.log(data.toString());
   });
 
   ffmpeg.stderr.on('data',(data) => {
+    guardNumber++;
     console.log(data.toString());
   });
 
   ffmpeg.on('close', (code) => {
+    clearInterval(guardTimer);
+    guardTimer = null;
     console.log(`child process exited with code ${code}`);
+    if(code != 0){
+      alert("录制失败, 请停止录制并检查声卡是否正常工作");
+      // error
+      videoFileA = videoFileB = null;
+      // recordStatus = "init";
+      return;
+    }
     // do video combination
     doVideoCombination();
   });
@@ -599,7 +621,7 @@ function doVideoCombination(){
         alert('合并视频执行失败');
         videoFileA = null;
         videoFileB = null;
-        console.error("合并视频失败: ", code);
+        console.error("录制过程中发生问题,\r\n请打开视频文件夹并检查时间最新的视频是否是您需要的", code);
         return;
       }
       // rename files
@@ -653,7 +675,16 @@ function stop(pause){
   }
 
   if(ffmpeg){
-    ffmpeg.stdin.write('q');
+    try{
+      ffmpeg.stdin.write('q');
+    }catch(e){
+      console.error(JSON.stringify(e));
+      videoFileB = videoFileA = null;
+      recordStatus = "init";
+      alert("录制视频失败");
+      throw e;
+    }
+
     // safely kill
     var dump = ffmpeg;
     // caused issue when deal with long time recording, commented out
